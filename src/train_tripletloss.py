@@ -506,18 +506,16 @@ def evaluate(
     sess.run(enqueue_op,
              {image_paths_placeholder: image_paths_array,
               labels_placeholder: labels_array})
-    emb_array = np.zeros((nrof_images, embedding_size))
+    emb_array = np.ndarray(shape=(0, embedding_size))
     nrof_batches = int(np.ceil(nrof_images / batch_size))
-    label_check_array = np.zeros((nrof_images,))
     for i in xrange(nrof_batches):
         batch_size = min(nrof_images - i * batch_size, batch_size)
         emb, lab = sess.run([embeddings, labels_batch], feed_dict={
                             batch_size_placeholder: batch_size, learning_rate_placeholder: 0.0, phase_train_placeholder: False})
-        emb_array[lab, :] = emb
-        label_check_array[lab] = 1
+        emb_array = np.vstack((emb_array, emb))
     print('%.3f' % (time.time() - start_time))
+    print('emb shape:', emb_array.shape)
 
-    assert(np.all(label_check_array == 1))
 
     _, _, accuracy, val, val_std, far = lfw.evaluate(
         emb_array, actual_issame, nrof_folds=nrof_folds)
